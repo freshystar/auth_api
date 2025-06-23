@@ -1,9 +1,8 @@
-use std::sync::{Arc, Mutex};
-
 use axum::{
     routing::{get, post},
     Router,
 };
+use std::sync::{Arc, Mutex};
 use tower_http::cors::CorsLayer;
 use utoipa::OpenApi;
 use utoipa_swagger_ui::SwaggerUi;
@@ -16,10 +15,12 @@ pub mod utils;
 use crate::{
     middleware::auth::auth_middleware,
     routes::{auth, protected},
+    utils::load_env,
 };
 
 #[derive(Debug, Clone)]
 pub struct AppState {
+    pub config: Arc<utils::Config>,
     pub users: Arc<Mutex<Vec<models::User>>>,
 }
 
@@ -27,22 +28,35 @@ pub struct AppState {
 async fn main() {
     #[derive(OpenApi)]
     #[openapi(
-        info(title = "Auth API", description = "A simple auth API"),
+        info(
+            title = "Auth API",
+            version = "1.0.0",
+            license(name = "MIT", identifier = "MIT"),
+            description = "A simple auth API"
+        ),
         paths(auth::login, auth::register, protected::admin_route),
         components(schemas(
             models::User,
             models::Role,
             models::LoginRequest,
-            models::LoginResponse
+            models::LoginResponse,
+            models::RegisterRequest,
+            models::RegisterResponse
         ))
     )]
     struct ApiDoc;
 
-    let state = AppState { users: Arc::new(Mutex::new(vec![])) };
+    let state = AppState {
+        config: Arc::new(load_env()),
+        users: Arc::new(Mutex::new(vec![])),
+    };
 
     let app = Router::new()
         .route("/admin", get(protected::admin_route))
-        .layer(axum::middleware::from_fn(auth_middleware))
+        .layer(axum::middleware::from_fn_with_state(
+            state.clone(),
+            auth_middleware,
+        ))
         .merge(SwaggerUi::new("/swagger-ui").url("/api-docs/openapi.json", ApiDoc::openapi()))
         .route("/login", post(auth::login))
         .route("/register", post(auth::register))
