@@ -65,7 +65,7 @@ pub async fn login(
     path = "/register",
     request_body = RegisterRequest,
     responses(
-        (status = 200, description = "User regisered successfully", body = RegisterResponse),
+        (status = 201, description = "User regisered successfully", body = RegisterResponse),
         (status = 401, description = "Bad request")
     ),
      tag = "Auth"
@@ -75,7 +75,7 @@ pub async fn register(
     Json(payload): Json<RegisterRequest>,
 ) -> impl IntoResponse {
     // In production, verify against a database
-    if payload.email.is_empty() || payload.first_name.is_empty() || payload.first_name.is_empty() || payload.password.is_empty() {
+    if payload.email.is_empty() || payload.first_name.is_empty() || payload.last_name.is_empty() || payload.password.is_empty() {
         return (
             StatusCode::BAD_REQUEST,
             Json(json!({"error": " email, first_name, last_name and password are required"})),
