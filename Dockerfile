@@ -1,15 +1,13 @@
-FROM rust:1.84.0 as builder
+FROM rust:1.84.0
 
 WORKDIR /app
 COPY . .
 
 RUN apt-get update && apt-get install -y pkg-config libssl-dev build-essential
+
 RUN cargo build --release
 
-FROM debian:bullseye-slim
-
-WORKDIR /app
-COPY --from=builder /app/target/release/auth_api ./auth_api
-
+ENV PORT=3000
 EXPOSE 3000
-CMD ["./auth_api"]
+
+CMD ["./target/release/auth_api"]
